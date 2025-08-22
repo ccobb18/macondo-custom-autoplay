@@ -31,7 +31,7 @@ var BotConfigs = map[pb.BotRequest_BotCode]struct {
 	pb.BotRequest_LEVEL2_PROBABILISTIC: {baseFindability: 0.4, longWordFindability: 0.2, parallelFindability: 0.3, isCommonWord: false},
 	pb.BotRequest_LEVEL3_PROBABILISTIC: {baseFindability: 0.55, longWordFindability: 0.35, parallelFindability: 0.45, isCommonWord: false},
 	pb.BotRequest_LEVEL4_PROBABILISTIC: {baseFindability: 0.85, longWordFindability: 0.45, parallelFindability: 0.85, isCommonWord: false},
-	pb.BotRequest_LEVEL5_PROBABILISTIC: {baseFindability: 0.9, longWordFindability: 0.8, parallelFindability: 0.85, isCommonWord: false},
+	pb.BotRequest_HASTY_BOT_2:          {baseFindability: 1.0, longWordFindability: 1.0, parallelFindability: 1.0, isCommonWord: false},
 }
 
 func filter(cfg *config.Config, g *game.Game, rack *tilemapping.Rack, plays []*move.Move, botType pb.BotRequest_BotCode,

@@ -1,7 +1,7 @@
 package movegen
 
 import (
-	"log"
+	"strings"
 	"sync"
 
 	"github.com/domino14/word-golib/tilemapping"
@@ -10,6 +10,7 @@ import (
 	"github.com/domino14/macondo/equity"
 	"github.com/domino14/macondo/move"
 	"github.com/domino14/macondo/tinymove"
+	"github.com/rs/zerolog/log"
 )
 
 var SmallPlaySlicePool = sync.Pool{
@@ -52,6 +53,79 @@ func AllPlaysRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip, righ
 		copy(word, gordonGen.strip[startCol:startCol+length])
 
 		alph := gordonGen.letterDistribution.TileMapping()
+
+		mainWord := ""
+		crossWords := make([]string, length)
+		curRow := row
+		curCol := col
+		for i, letter := range word {
+			rune := alph.Letter(letter)
+			findCrossWord := true
+			if rune == "?" {
+				findCrossWord = false
+				rune = "(" + alph.Letter(gordonGen.board.GetSquares()[15*curRow+curCol]) + ")"
+			}
+			mainWord += strings.ToUpper(rune)
+
+			if findCrossWord {
+				crossWord := rune
+				curCrossRow := curRow
+				curCrossCol := curCol
+				for {
+					if gordonGen.vertical {
+						curCrossCol += 1
+					} else {
+						curCrossRow += 1
+					}
+
+					if curCrossRow >= 15 || curCrossCol >= 15 {
+						break
+					}
+
+					valAtSquare := gordonGen.board.GetSquares()[15*curCrossRow+curCrossCol]
+					if valAtSquare != 0 {
+						rune = "(" + alph.Letter(valAtSquare) + ")"
+						crossWord += rune
+					} else {
+						break
+					}
+				}
+				curCrossRow = curRow
+				curCrossCol = curCol
+				for {
+					if gordonGen.vertical {
+						curCrossCol -= 1
+					} else {
+						curCrossRow -= 1
+					}
+
+					if curCrossRow < 0 || curCrossCol < 0 {
+						break
+					}
+
+					valAtSquare := gordonGen.board.GetSquares()[15*curCrossRow+curCrossCol]
+					if valAtSquare != 0 {
+						rune = "(" + alph.Letter(valAtSquare) + ")"
+						crossWord = rune + crossWord
+					} else {
+						break
+					}
+				}
+
+				if len(crossWord) > 1 {
+					crossWords[i] = crossWord
+					log.Info().Msg("cross: " + crossWord)
+				}
+			}
+
+			if gordonGen.vertical {
+				curRow += 1
+			} else {
+				curCol += 1
+			}
+		}
+		log.Info().Msg("main: " + mainWord)
+
 		play := move.NewScoringMove(score, word, rack.TilesOn(), gordonGen.vertical,
 			tilesPlayed, alph, row, col)
 		gordonGen.plays = append(gordonGen.plays, play)
@@ -139,7 +213,7 @@ func AllPlaysSmallRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip,
 
 	case move.MoveTypeExchange:
 		// Not meant for this, yet.
-		log.Fatal("move type exchange is not compatible with SmallMove")
+		// log.Fatal("move type exchange is not compatible with SmallMove")
 	case move.MoveTypePass:
 		gordonGen.smallPlays = append(gordonGen.smallPlays, tinymove.PassMove())
 	default:

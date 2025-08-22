@@ -298,7 +298,13 @@ func (p *BotTurnPlayer) BestPlay(ctx context.Context) (*move.Move, error) {
 		}
 		return move, nil
 	}
-	return p.GenerateMoves(1)[0], nil
+	x := p.GenerateMoves(999999)
+	stringToLog := ""
+	for _, tile := range x[0].Tiles() {
+		stringToLog += x[0].Alphabet().Letter(tile)
+	}
+	log.Info().Msg("playing: " + stringToLog + " at " + x[0].BoardCoords())
+	return x[0], nil
 }
 
 // Returns a string summary of details from a previous call to BestPlay.
