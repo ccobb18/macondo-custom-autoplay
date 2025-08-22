@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 
 	aiturnplayer "github.com/domino14/macondo/ai/turnplayer"
@@ -298,13 +299,32 @@ func (p *BotTurnPlayer) BestPlay(ctx context.Context) (*move.Move, error) {
 		}
 		return move, nil
 	}
-	x := p.GenerateMoves(999999)
-	stringToLog := ""
-	for _, tile := range x[0].Tiles() {
-		stringToLog += x[0].Alphabet().Letter(tile)
+	allMoves := p.GenerateMoves(999999) // sorted by equity
+	wordsToPlay := allMoves[0].WordsFormed
+	for _, word := range wordsToPlay {
+		foundAnotherPlay := false
+		for i := 1; i < len(allMoves); i++ {
+			if !slices.Contains(allMoves[i].WordsFormed, word) {
+				allMoves[0].EquityLosses = append(
+					allMoves[0].EquityLosses, allMoves[0].Equity()-allMoves[i].Equity())
+				foundAnotherPlay = true
+				break
+			}
+		}
+		// this happens infrequently enough to be negligible; if no valid move can
+		// be played without that word, just treat it as the difference from 0 equity
+		if !foundAnotherPlay {
+			allMoves[0].EquityLosses = append(
+				allMoves[0].EquityLosses, allMoves[0].Equity()-0.0)
+		}
 	}
-	log.Info().Msg("playing: " + stringToLog + " at " + x[0].BoardCoords())
-	return x[0], nil
+
+	stringToLog := ""
+	for _, tile := range allMoves[0].Tiles() {
+		stringToLog += allMoves[0].Alphabet().Letter(tile)
+	}
+	// log.Info().Msg("playing: " + stringToLog + " at " + allMoves[0].BoardCoords())
+	return allMoves[0], nil
 }
 
 // Returns a string summary of details from a previous call to BestPlay.

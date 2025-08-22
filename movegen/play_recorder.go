@@ -10,7 +10,6 @@ import (
 	"github.com/domino14/macondo/equity"
 	"github.com/domino14/macondo/move"
 	"github.com/domino14/macondo/tinymove"
-	"github.com/rs/zerolog/log"
 )
 
 var SmallPlaySlicePool = sync.Pool{
@@ -55,15 +54,15 @@ func AllPlaysRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip, righ
 		alph := gordonGen.letterDistribution.TileMapping()
 
 		mainWord := ""
-		crossWords := make([]string, length)
+		var crossWords []string
 		curRow := row
 		curCol := col
-		for i, letter := range word {
+		for _, letter := range word {
 			rune := alph.Letter(letter)
 			findCrossWord := true
 			if rune == "?" {
 				findCrossWord = false
-				rune = "(" + alph.Letter(gordonGen.board.GetSquares()[15*curRow+curCol]) + ")"
+				rune = alph.Letter(gordonGen.board.GetSquares()[15*curRow+curCol])
 			}
 			mainWord += strings.ToUpper(rune)
 
@@ -84,7 +83,7 @@ func AllPlaysRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip, righ
 
 					valAtSquare := gordonGen.board.GetSquares()[15*curCrossRow+curCrossCol]
 					if valAtSquare != 0 {
-						rune = "(" + alph.Letter(valAtSquare) + ")"
+						rune = alph.Letter(valAtSquare)
 						crossWord += rune
 					} else {
 						break
@@ -105,7 +104,7 @@ func AllPlaysRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip, righ
 
 					valAtSquare := gordonGen.board.GetSquares()[15*curCrossRow+curCrossCol]
 					if valAtSquare != 0 {
-						rune = "(" + alph.Letter(valAtSquare) + ")"
+						rune = alph.Letter(valAtSquare)
 						crossWord = rune + crossWord
 					} else {
 						break
@@ -113,8 +112,8 @@ func AllPlaysRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip, righ
 				}
 
 				if len(crossWord) > 1 {
-					crossWords[i] = crossWord
-					log.Info().Msg("cross: " + crossWord)
+					crossWords = append(crossWords, strings.ToUpper(crossWord))
+					// log.Info().Msg("cross: " + crossWord)
 				}
 			}
 
@@ -124,10 +123,11 @@ func AllPlaysRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip, righ
 				curCol += 1
 			}
 		}
-		log.Info().Msg("main: " + mainWord)
+		// log.Info().Msg("main: " + mainWord)
 
 		play := move.NewScoringMove(score, word, rack.TilesOn(), gordonGen.vertical,
 			tilesPlayed, alph, row, col)
+		play.WordsFormed = append(crossWords, strings.ToUpper(mainWord))
 		gordonGen.plays = append(gordonGen.plays, play)
 
 	case move.MoveTypeExchange:

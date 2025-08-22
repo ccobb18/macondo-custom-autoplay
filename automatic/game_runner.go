@@ -39,6 +39,9 @@ type GameRunner struct {
 	gamechan           chan string
 	aiplayers          [2]aiturnplayer.AITurnPlayer
 	order              [2]int
+
+	PlayabilityValues map[string]int
+	UtilityValues     map[string]float64
 }
 
 // NewGameRunner just instantiates and initializes a game runner.
@@ -214,5 +217,12 @@ func (r *GameRunner) PlayBestTurn(playerIdx int, addToHistory bool) error {
 			tilesRemaining,
 			r.game.PointsFor((playerIdx+1)%2))
 	}
+
+	// update playability and utility running totals
+	for i, word := range bestPlay.WordsFormed {
+		r.PlayabilityValues[word] += 1
+		r.UtilityValues[word] += bestPlay.EquityLosses[i]
+	}
+
 	return nil
 }

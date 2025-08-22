@@ -10,9 +10,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
@@ -114,7 +116,7 @@ type Job struct{ gidx int }
 
 func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 	numGames int, block bool, threads int,
-	outputFilename, lexicon, letterDistribution string,
+	outputFilename, plFilename, utFilename, lexicon, letterDistribution string,
 	players []AutomaticRunnerPlayer) error {
 
 	if len(players) != 2 {
@@ -136,6 +138,16 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 		return err
 	}
 
+	pllogfile, plerr := os.Create(plFilename)
+	if plerr != nil {
+		return plerr
+	}
+
+	utlogfile, uterr := os.Create(utFilename)
+	if uterr != nil {
+		return uterr
+	}
+
 	glfilename := filepath.Join(
 		path.Dir(outputFilename),
 		"games-"+path.Base(outputFilename))
@@ -150,6 +162,10 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 	jobs := make(chan Job, threads*5)
 	logChan := make(chan string, 100)
 	gameChan := make(chan string, 10)
+
+	playabilityValues := make(map[string]int)
+	utilityValues := make(map[string]float64)
+
 	var wg sync.WaitGroup
 	// var fwg sync.WaitGroup
 
@@ -168,6 +184,8 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 			defer wg.Done()
 			r := GameRunner{logchan: logChan, gamechan: gameChan,
 				config: cfg, lexicon: lexicon, letterDistribution: letterDistribution}
+			r.PlayabilityValues = playabilityValues
+			r.UtilityValues = utilityValues
 			err := r.Init(players)
 			if err != nil {
 				log.Err(err).Msg("error initializing runner")
@@ -196,8 +214,11 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 		for queuingJobs {
 			select {
 			case jobs <- Job{i}:
-				if i%1000 == 0 {
+				if i%50 == 0 {
 					log.Info().Msgf("Queued %v jobs", i)
+					log.Info().Msgf("Taking a rest -___-")
+					time.Sleep(5 * time.Second)
+					log.Info().Msgf("Done resting :)")
 				}
 				i++
 			case <-ctx.Done():
@@ -230,6 +251,41 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 			logfile.WriteString(msg)
 		}
 		logfile.Close()
+
+		type plkv struct {
+			Key   string
+			Value int
+		}
+		var plss []plkv
+		for k, v := range playabilityValues {
+			plss = append(plss, plkv{k, v})
+		}
+		sort.Slice(plss, func(i, j int) bool {
+			return plss[i].Value > plss[j].Value
+		})
+		for _, kv := range plss {
+			valueAsStr := strconv.Itoa(kv.Value)
+			pllogfile.WriteString(kv.Key + "," + valueAsStr + "\n")
+		}
+		pllogfile.Close()
+
+		type utkv struct {
+			Key   string
+			Value float64
+		}
+		var utss []utkv
+		for k, v := range utilityValues {
+			utss = append(utss, utkv{k, v})
+		}
+		sort.Slice(utss, func(i, j int) bool {
+			return utss[i].Value > utss[j].Value
+		})
+		for _, kv := range utss {
+			valueAsStr := strconv.FormatFloat(kv.Value, 'f', 2, 64)
+			utlogfile.WriteString(kv.Key + "," + valueAsStr + "\n")
+		}
+		utlogfile.Close()
+
 		log.Info().Msg("Exiting turn logger goroutine!")
 		return nil
 	})

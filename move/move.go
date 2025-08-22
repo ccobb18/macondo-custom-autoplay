@@ -49,6 +49,9 @@ type Move struct {
 	vertical bool
 
 	alph *tilemapping.TileMapping
+
+	WordsFormed  []string
+	EquityLosses []float64
 }
 
 var reVertical, reHorizontal *regexp.Regexp
