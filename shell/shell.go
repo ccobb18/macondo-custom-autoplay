@@ -760,6 +760,7 @@ func (sc *ShellController) commitAIMove() error {
 func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) error {
 	var logfile, lexicon, letterDistribution, leavefile1, leavefile2, pegfile1, pegfile2 string
 	var pllogfile, utlogfile string
+	var sleep int
 	var numgames, numthreads int
 	var block bool
 	var botcode1, botcode2 pb.BotRequest_BotCode
@@ -823,6 +824,9 @@ func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) err
 	if numgames, err = options.IntDefault("numgames", 1e9); err != nil {
 		return err
 	}
+	if sleep, err = options.IntDefault("sleep", 0); err != nil {
+		return err
+	}
 	stochastic1 = options.Bool("stochastic1")
 	stochastic2 = options.Bool("stochastic2")
 	block = options.Bool("block")
@@ -856,7 +860,7 @@ func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) err
 	sc.showMessage("utility scores will log to " + utlogfile)
 	sc.gameRunnerCtx, sc.gameRunnerCancel = context.WithCancel(context.Background())
 	err = automatic.StartCompVCompStaticGames(
-		sc.gameRunnerCtx, sc.config, numgames, block, numthreads,
+		sc.gameRunnerCtx, sc.config, numgames, block, numthreads, sleep,
 		logfile, pllogfile, utlogfile, lexicon, letterDistribution,
 		[]automatic.AutomaticRunnerPlayer{
 			{LeaveFile: leavefile1,

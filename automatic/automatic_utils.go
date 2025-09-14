@@ -115,7 +115,7 @@ func playerNames(players []AutomaticRunnerPlayer) []string {
 type Job struct{ gidx int }
 
 func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
-	numGames int, block bool, threads int,
+	numGames int, block bool, threads int, sleep int,
 	outputFilename, plFilename, utFilename, lexicon, letterDistribution string,
 	players []AutomaticRunnerPlayer) error {
 
@@ -214,11 +214,14 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 		for queuingJobs {
 			select {
 			case jobs <- Job{i}:
-				if i%50 == 0 {
+				if i%500 == 0 {
 					log.Info().Msgf("Queued %v jobs", i)
-					log.Info().Msgf("Taking a rest -___-")
-					time.Sleep(5 * time.Second)
-					log.Info().Msgf("Done resting :)")
+
+					if sleep > 0 {
+						log.Info().Msgf("Taking a rest -___-")
+						time.Sleep(time.Duration(sleep) * time.Second)
+						log.Info().Msgf("Done resting :)")
+					}
 				}
 				i++
 			case <-ctx.Done():

@@ -324,7 +324,8 @@ const (
 	BotRequest_LEVEL2_PROBABILISTIC   BotRequest_BotCode = 6
 	BotRequest_LEVEL3_PROBABILISTIC   BotRequest_BotCode = 7
 	BotRequest_LEVEL4_PROBABILISTIC   BotRequest_BotCode = 8
-	BotRequest_HASTY_BOT_2            BotRequest_BotCode = 9
+	BotRequest_LEVEL5_PROBABILISTIC   BotRequest_BotCode = 9
+	BotRequest_HASTY_BOT_2            BotRequest_BotCode = 17
 	BotRequest_NO_LEAVE_BOT           BotRequest_BotCode = 10
 	BotRequest_SIMMING_BOT            BotRequest_BotCode = 11
 	BotRequest_HASTY_PLUS_ENDGAME_BOT BotRequest_BotCode = 12
@@ -352,7 +353,8 @@ var (
 		6:   "LEVEL2_PROBABILISTIC",
 		7:   "LEVEL3_PROBABILISTIC",
 		8:   "LEVEL4_PROBABILISTIC",
-		9:   "HASTY_BOT_2",
+		9:   "LEVEL5_PROBABILISTIC",
+		17:  "HASTY_BOT_2",
 		10:  "NO_LEAVE_BOT",
 		11:  "SIMMING_BOT",
 		12:  "HASTY_PLUS_ENDGAME_BOT",
@@ -373,7 +375,8 @@ var (
 		"LEVEL2_PROBABILISTIC":        6,
 		"LEVEL3_PROBABILISTIC":        7,
 		"LEVEL4_PROBABILISTIC":        8,
-		"HASTY_BOT_2":                 9,
+		"LEVEL5_PROBABILISTIC":        9,
+		"HASTY_BOT_2":                 17,
 		"NO_LEAVE_BOT":                10,
 		"SIMMING_BOT":                 11,
 		"HASTY_PLUS_ENDGAME_BOT":      12,
@@ -1490,13 +1493,13 @@ const file_api_proto_macondo_macondo_proto_rawDesc = "" +
 	"PlayerInfo\x12\x1a\n" +
 	"\bnickname\x18\x01 \x01(\tR\bnickname\x12\x1b\n" +
 	"\treal_name\x18\x02 \x01(\tR\brealName\x12\x17\n" +
-	"\auser_id\x18\x03 \x01(\tR\x06userId\"\xba\x05\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\"\xd4\x05\n" +
 	"\n" +
 	"BotRequest\x127\n" +
 	"\fgame_history\x18\x01 \x01(\v2\x14.macondo.GameHistoryR\vgameHistory\x12I\n" +
 	"\x12evaluation_request\x18\x02 \x01(\v2\x1a.macondo.EvaluationRequestR\x11evaluationRequest\x126\n" +
 	"\bbot_type\x18\x03 \x01(\x0e2\x1b.macondo.BotRequest.BotCodeR\abotType\x12)\n" +
-	"\x10millis_remaining\x18\x04 \x01(\x05R\x0fmillisRemaining\"\xc4\x03\n" +
+	"\x10millis_remaining\x18\x04 \x01(\x05R\x0fmillisRemaining\"\xde\x03\n" +
 	"\aBotCode\x12\r\n" +
 	"\tHASTY_BOT\x10\x00\x12\x1a\n" +
 	"\x16LEVEL1_COMMON_WORD_BOT\x10\x01\x12\x1a\n" +
@@ -1506,8 +1509,9 @@ const file_api_proto_macondo_macondo_proto_rawDesc = "" +
 	"\x14LEVEL1_PROBABILISTIC\x10\x05\x12\x18\n" +
 	"\x14LEVEL2_PROBABILISTIC\x10\x06\x12\x18\n" +
 	"\x14LEVEL3_PROBABILISTIC\x10\a\x12\x18\n" +
-	"\x14LEVEL4_PROBABILISTIC\x10\b\x12\x0f\n" +
-	"\vHASTY_BOT_2\x10\t\x12\x10\n" +
+	"\x14LEVEL4_PROBABILISTIC\x10\b\x12\x18\n" +
+	"\x14LEVEL5_PROBABILISTIC\x10\t\x12\x0f\n" +
+	"\vHASTY_BOT_2\x10\x11\x12\x10\n" +
 	"\fNO_LEAVE_BOT\x10\n" +
 	"\x12\x0f\n" +
 	"\vSIMMING_BOT\x10\v\x12\x1a\n" +
