@@ -8,8 +8,6 @@ To get playability and utility values, you can run something like
 autoplay -botcode1 HASTY_BOT_2 -botcode2 HASTY_BOT_2 -pllogfile "/path/to/my/file/pllogtest.txt" -utlogfile "/path/to/my/file/utlogtest.txt" -threads 1
 ```
 
-autoplay -botcode1 HASTY_BOT_2 -botcode2 HASTY_BOT_2 -pllogfile "/Users/cartercobb/Downloads/pllogtestNEW-1.txt" -utlogfile "/Users/cartercobb/Downloads/utlogtestNEW-1.txt" -threads 1
-
 Note: HASTY_BOT_2 is a version of HASTY_BOT that I created as a workaround; see the comment in ai/bot/filters.go.
 Note: It currently breaks if you set threads to anything higher than 1; I should probably fix this.
 
