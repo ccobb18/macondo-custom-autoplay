@@ -3,6 +3,7 @@ package automatic
 // Data collection for automatic game. Allow computer vs computer games, etc.
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"expvar"
@@ -116,8 +117,94 @@ type Job struct{ gidx int }
 
 func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 	numGames int, block bool, threads int, sleep int,
-	outputFilename, plFilename, utFilename, lexicon, letterDistribution string,
+	outputFilename, plrFilename, utrFilename, plFilename, utFilename, lexicon, letterDistribution string,
 	players []AutomaticRunnerPlayer) error {
+
+	playabilityValues := make(map[string]int)
+	utilityValues := make(map[string]float64)
+
+	// fill in the playability and utility values from existing files so
+	// we can pick up where we left off.
+	// this could be refactored into a helper method but i don't feel like it :p
+	// this should also work with overwriting an existing file
+	if plrFilename != "" {
+		log.Info().Msgf("Reading existing playability values from: %q", plrFilename)
+
+		plrlogfile, err := os.Open(plrFilename)
+		if err != nil {
+			return err
+		}
+		defer plrlogfile.Close()
+
+		scanner := bufio.NewScanner(plrlogfile)
+		for scanner.Scan() {
+			line := scanner.Text()
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+
+			parts := strings.Split(line, ",")
+			if len(parts) != 2 {
+				log.Info().Msgf("skipping malformed line: %q", line)
+				continue
+			}
+
+			word := parts[0]
+			numStr := parts[1]
+
+			num, err := strconv.Atoi(numStr)
+			if err != nil {
+				log.Info().Msgf("skipping line (bad number): %q", line)
+				continue
+			}
+
+			playabilityValues[word] = num
+		}
+
+		if err := scanner.Err(); err != nil {
+			return err
+		}
+	}
+	if utrFilename != "" {
+		log.Info().Msgf("Reading existing utility values from: %q", utrFilename)
+
+		utrlogfile, err := os.Open(utrFilename)
+		if err != nil {
+			return err
+		}
+		defer utrlogfile.Close()
+
+		scanner := bufio.NewScanner(utrlogfile)
+		for scanner.Scan() {
+			line := scanner.Text()
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+
+			parts := strings.Split(line, ",")
+			if len(parts) != 2 {
+				log.Info().Msgf("skipping malformed line: %q", line)
+				continue
+			}
+
+			word := parts[0]
+			numStr := parts[1]
+
+			num, err := strconv.ParseFloat(numStr, 64)
+			if err != nil {
+				log.Info().Msgf("skipping line (bad number): %q", line)
+				continue
+			}
+
+			utilityValues[word] = num
+		}
+
+		if err := scanner.Err(); err != nil {
+			return (err)
+		}
+	}
 
 	if len(players) != 2 {
 		return errors.New("must have two players")
@@ -162,9 +249,6 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 	jobs := make(chan Job, threads*5)
 	logChan := make(chan string, 100)
 	gameChan := make(chan string, 10)
-
-	playabilityValues := make(map[string]int)
-	utilityValues := make(map[string]float64)
 
 	var wg sync.WaitGroup
 	// var fwg sync.WaitGroup
@@ -214,7 +298,7 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 		for queuingJobs {
 			select {
 			case jobs <- Job{i}:
-				if i%500 == 0 {
+				if i%500 == 0 && i > 0 {
 					log.Info().Msgf("Queued %v jobs", i)
 
 					if sleep > 0 {

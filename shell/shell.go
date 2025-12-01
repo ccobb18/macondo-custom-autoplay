@@ -759,6 +759,7 @@ func (sc *ShellController) commitAIMove() error {
 
 func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) error {
 	var logfile, lexicon, letterDistribution, leavefile1, leavefile2, pegfile1, pegfile2 string
+	var plrlogfile, utrlogfile string
 	var pllogfile, utlogfile string
 	var sleep int
 	var numgames, numthreads int
@@ -772,6 +773,10 @@ func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) err
 	} else {
 		logfile = options.String("logfile")
 	}
+
+	plrlogfile = options.String("plrlogfile")
+	utrlogfile = options.String("utrlogfile")
+
 	if options.String("pllogfile") == "" {
 		pllogfile = "/tmp/autoplay_pl.txt"
 	} else {
@@ -861,7 +866,7 @@ func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) err
 	sc.gameRunnerCtx, sc.gameRunnerCancel = context.WithCancel(context.Background())
 	err = automatic.StartCompVCompStaticGames(
 		sc.gameRunnerCtx, sc.config, numgames, block, numthreads, sleep,
-		logfile, pllogfile, utlogfile, lexicon, letterDistribution,
+		logfile, plrlogfile, utrlogfile, pllogfile, utlogfile, lexicon, letterDistribution,
 		[]automatic.AutomaticRunnerPlayer{
 			{LeaveFile: leavefile1,
 				PEGFile:              pegfile1,

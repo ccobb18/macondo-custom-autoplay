@@ -13,11 +13,13 @@ Note: It currently breaks if you set threads to anything higher than 1; I should
 
 I also added a `-sleep` option that will pause the autoplay for the specified number of seconds every so often so my poor old computer doesn't overheat :P
 
-Some stuff I would like to add:
-* Optional argument to pass in paths to existing playability/utility logfiles and have the calculations add to those existing values instead of starting from scratch
+Potential future improvements:
+* ~~Optional argument to pass in paths to existing playability/utility logfiles and have the calculations add to those existing values instead of starting from scratch~~ (Done; pass filepaths into the `-plrlogfile` and `-utrlogfile` options (the "r" stands for "read"), and it will start from the values in those files and add to them.)
 * A version of utility based on alphagrams rather than specific words
-* Maybe an option to have all words included in the playability/utility logfiles, even ones with playability/utility of 0
-* Maybe an option to not print to the logfile (even the temp one), since it can get quite large if you run autoplay long enough
+* Make it so that it's not doing the playability and utility calculations unless you actually pass in arguments for those options
+* An option to have all words included in the playability/utility logfiles, even ones with playability/utility of 0
+* An option to not print to the logfile (even the temp one), since it can get quite large if you run autoplay long enough
+* Add documentation of the new options to `help autoplay`
 
 Original readme below:
 
