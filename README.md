@@ -1,3 +1,30 @@
+# macondo-custom-autoplay
+
+A fork of macondo that enhances the autoplay feature to be able to calculate playability and utility values. "Playability" here means simply how many times a word was played across a sample of autoplayed games (either as a main word or a cross word). "Utility" corresponds to a slightly more useful metric which is also sometimes called "playability", e.g. [here](https://crosstables.livejournal.com/24367.html); it instead calculates roughly what the total equity loss would be across the sample of games from not knowing a given word.
+
+To get playability and utility values, you can run something like
+
+```
+autoplay -botcode1 HASTY_BOT_2 -botcode2 HASTY_BOT_2 -pllogfile "/path/to/my/file/pllogtest.txt" -utlogfile "/path/to/my/file/utlogtest.txt" -threads 1
+```
+
+autoplay -botcode1 HASTY_BOT_2 -botcode2 HASTY_BOT_2 -pllogfile "/Users/cartercobb/Downloads/pllogtestNEW-1.txt" -utlogfile "/Users/cartercobb/Downloads/utlogtestNEW-1.txt" -threads 1
+
+Note: HASTY_BOT_2 is a version of HASTY_BOT that I created as a workaround; see the comment in ai/bot/filters.go.
+Note: It currently breaks if you set threads to anything higher than 1; I should probably fix this.
+
+I also added a `-sleep` option that will pause the autoplay for the specified number of seconds every so often so my poor old computer doesn't overheat :P
+
+Some stuff I would like to add:
+* Optional argument to pass in paths to existing playability/utility logfiles and have the calculations add to those existing values instead of starting from scratch
+* A version of utility based on alphagrams rather than specific words
+* Maybe an option to have all words included in the playability/utility logfiles, even ones with playability/utility of 0
+* Maybe an option to not print to the logfile (even the temp one), since it can get quite large if you run autoplay long enough
+
+Original readme below:
+
+---
+
 # macondo
 
 A crossword board game solver. It may be the best one in the world (so far).

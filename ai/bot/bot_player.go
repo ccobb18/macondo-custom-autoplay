@@ -319,10 +319,10 @@ func (p *BotTurnPlayer) BestPlay(ctx context.Context) (*move.Move, error) {
 		}
 	}
 
-	stringToLog := ""
-	for _, tile := range allMoves[0].Tiles() {
-		stringToLog += allMoves[0].Alphabet().Letter(tile)
-	}
+	// stringToLog := ""
+	// for _, tile := range allMoves[0].Tiles() {
+	// 	stringToLog += allMoves[0].Alphabet().Letter(tile)
+	// }
 	// log.Info().Msg("playing: " + stringToLog + " at " + allMoves[0].BoardCoords())
 	return allMoves[0], nil
 }

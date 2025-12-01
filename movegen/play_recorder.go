@@ -1,6 +1,7 @@
 package movegen
 
 import (
+	"log"
 	"strings"
 	"sync"
 
@@ -52,7 +53,14 @@ func AllPlaysRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip, righ
 		copy(word, gordonGen.strip[startCol:startCol+length])
 
 		alph := gordonGen.letterDistribution.TileMapping()
+		play := move.NewScoringMove(score, word, rack.TilesOn(), gordonGen.vertical,
+			tilesPlayed, alph, row, col)
 
+		// get the words formed by this play (including the main word & all cross words)
+		// and populate the WordsFormed field.
+		// there's probably a more efficient way to do this.
+		// for example, can this only be called when necessary by bot_player,
+		// instead of for all moves?
 		mainWord := ""
 		var crossWords []string
 		curRow := row
@@ -124,10 +132,8 @@ func AllPlaysRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip, righ
 			}
 		}
 		// log.Info().Msg("main: " + mainWord)
-
-		play := move.NewScoringMove(score, word, rack.TilesOn(), gordonGen.vertical,
-			tilesPlayed, alph, row, col)
 		play.WordsFormed = append(crossWords, strings.ToUpper(mainWord))
+
 		gordonGen.plays = append(gordonGen.plays, play)
 
 	case move.MoveTypeExchange:
@@ -213,7 +219,7 @@ func AllPlaysSmallRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip,
 
 	case move.MoveTypeExchange:
 		// Not meant for this, yet.
-		// log.Fatal("move type exchange is not compatible with SmallMove")
+		log.Fatal("move type exchange is not compatible with SmallMove")
 	case move.MoveTypePass:
 		gordonGen.smallPlays = append(gordonGen.smallPlays, tinymove.PassMove())
 	default:
