@@ -50,8 +50,10 @@ type Move struct {
 
 	alph *tilemapping.TileMapping
 
-	WordsFormed  []string
-	EquityLosses []float64
+	WordsFormed           []string
+	AlphagramsFormed      []string
+	EquityLosses          []float64
+	AlphagramEquityLosses []float64
 }
 
 var reVertical, reHorizontal *regexp.Regexp

@@ -2,6 +2,7 @@ package movegen
 
 import (
 	"log"
+	"sort"
 	"strings"
 	"sync"
 
@@ -62,7 +63,8 @@ func AllPlaysRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip, righ
 		// for example, can this only be called when necessary by bot_player,
 		// instead of for all moves?
 		mainWord := ""
-		var crossWords []string
+		allWords := make(map[string]struct{})
+		allAlphagrams := make(map[string]struct{})
 		curRow := row
 		curCol := col
 		for _, letter := range word {
@@ -120,7 +122,8 @@ func AllPlaysRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip, righ
 				}
 
 				if len(crossWord) > 1 {
-					crossWords = append(crossWords, strings.ToUpper(crossWord))
+					allWords[strings.ToUpper(crossWord)] = struct{}{}
+					allAlphagrams[Alphabetize(strings.ToUpper(crossWord))] = struct{}{}
 					// log.Info().Msg("cross: " + crossWord)
 				}
 			}
@@ -132,7 +135,15 @@ func AllPlaysRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip, righ
 			}
 		}
 		// log.Info().Msg("main: " + mainWord)
-		play.WordsFormed = append(crossWords, strings.ToUpper(mainWord))
+		allWords[strings.ToUpper(mainWord)] = struct{}{}
+		allAlphagrams[Alphabetize(strings.ToUpper(mainWord))] = struct{}{}
+
+		for v := range allWords {
+			play.WordsFormed = append(play.WordsFormed, v)
+		}
+		for v := range allAlphagrams {
+			play.AlphagramsFormed = append(play.AlphagramsFormed, v)
+		}
 
 		gordonGen.plays = append(gordonGen.plays, play)
 
@@ -157,6 +168,14 @@ func AllPlaysRecorder(gen MoveGenerator, rack *tilemapping.Rack, leftstrip, righ
 
 	}
 
+}
+
+func Alphabetize(s string) string {
+	r := []rune(s)
+	sort.Slice(r, func(i, j int) bool {
+		return r[i] < r[j]
+	})
+	return string(r)
 }
 
 // AllPlaysSmallRecorder is a recorder that records all plays, but as "SmallMove"s,

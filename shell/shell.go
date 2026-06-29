@@ -759,8 +759,8 @@ func (sc *ShellController) commitAIMove() error {
 
 func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) error {
 	var logfile, lexicon, letterDistribution, leavefile1, leavefile2, pegfile1, pegfile2 string
-	var plrlogfile, utrlogfile string
-	var pllogfile, utlogfile string
+	var addToExisting bool
+	var pllogfile, utlogfile, autlogfile string
 	var sleep int
 	var numgames, numthreads int
 	var block bool
@@ -774,9 +774,6 @@ func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) err
 		logfile = options.String("logfile")
 	}
 
-	plrlogfile = options.String("plrlogfile")
-	utrlogfile = options.String("utrlogfile")
-
 	if options.String("pllogfile") == "" {
 		pllogfile = "/tmp/autoplay_pl.txt"
 	} else {
@@ -786,6 +783,11 @@ func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) err
 		utlogfile = "/tmp/autoplay_ut.txt"
 	} else {
 		utlogfile = options.String("utlogfile")
+	}
+	if options.String("autlogfile") == "" {
+		autlogfile = "/tmp/autoplay_aut.txt"
+	} else {
+		autlogfile = options.String("autlogfile")
 	}
 	if options.String("lexicon") == "" {
 		lexicon = sc.config.GetString(config.ConfigDefaultLexicon)
@@ -832,6 +834,7 @@ func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) err
 	if sleep, err = options.IntDefault("sleep", 0); err != nil {
 		return err
 	}
+	addToExisting = options.Bool("addToExisting")
 	stochastic1 = options.Bool("stochastic1")
 	stochastic2 = options.Bool("stochastic2")
 	block = options.Bool("block")
@@ -863,10 +866,11 @@ func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) err
 	sc.showMessage("automatic game runner will log to " + logfile)
 	sc.showMessage("playability scores will log to " + pllogfile)
 	sc.showMessage("utility scores will log to " + utlogfile)
+	sc.showMessage("alphagram utility scores will log to " + autlogfile)
 	sc.gameRunnerCtx, sc.gameRunnerCancel = context.WithCancel(context.Background())
 	err = automatic.StartCompVCompStaticGames(
-		sc.gameRunnerCtx, sc.config, numgames, block, numthreads, sleep,
-		logfile, plrlogfile, utrlogfile, pllogfile, utlogfile, lexicon, letterDistribution,
+		sc.gameRunnerCtx, sc.config, numgames, block, numthreads, sleep, addToExisting,
+		logfile, pllogfile, utlogfile, autlogfile, lexicon, letterDistribution,
 		[]automatic.AutomaticRunnerPlayer{
 			{LeaveFile: leavefile1,
 				PEGFile:              pegfile1,

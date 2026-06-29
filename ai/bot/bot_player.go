@@ -300,8 +300,10 @@ func (p *BotTurnPlayer) BestPlay(ctx context.Context) (*move.Move, error) {
 		return move, nil
 	}
 	allMoves := p.GenerateMoves(999999) // sorted by equity
-	wordsToPlay := allMoves[0].WordsFormed
-	for _, word := range wordsToPlay {
+
+	// for each word formed by the top move (including the main word and cross words),
+	// find the equity difference from the next-best move not including that word.
+	for _, word := range allMoves[0].WordsFormed {
 		foundAnotherPlay := false
 		for i := 1; i < len(allMoves); i++ {
 			if !slices.Contains(allMoves[i].WordsFormed, word) {
@@ -311,11 +313,34 @@ func (p *BotTurnPlayer) BestPlay(ctx context.Context) (*move.Move, error) {
 				break
 			}
 		}
-		// this happens infrequently enough to be negligible; if no valid move can
-		// be played without that word, just treat it as the difference from 0 equity
+		// if no valid move can be played without that word, just treat it as the
+		// difference from 0 equity. this is not a particularly good solution but
+		// i think this happens infrequently enough to be negligible.
 		if !foundAnotherPlay {
 			allMoves[0].EquityLosses = append(
 				allMoves[0].EquityLosses, allMoves[0].Equity()-0.0)
+		}
+	}
+
+	// for each alphagram of any word in the top move (including the main word and cross
+	// words), find the equity difference from the best move not including any words
+	// formed by that alphagram.
+	for _, agram := range allMoves[0].AlphagramsFormed {
+		foundAnotherPlay := false
+		for i := 1; i < len(allMoves); i++ {
+			if !slices.Contains(allMoves[i].AlphagramsFormed, agram) {
+				allMoves[0].AlphagramEquityLosses = append(
+					allMoves[0].AlphagramEquityLosses, allMoves[0].Equity()-allMoves[i].Equity())
+				foundAnotherPlay = true
+				break
+			}
+		}
+		// if no valid move can be played without that word, just treat it as the
+		// difference from 0 equity. this is not a particularly good solution but
+		// i think this happens infrequently enough to be negligible.
+		if !foundAnotherPlay {
+			allMoves[0].AlphagramEquityLosses = append(
+				allMoves[0].AlphagramEquityLosses, allMoves[0].Equity()-0.0)
 		}
 	}
 

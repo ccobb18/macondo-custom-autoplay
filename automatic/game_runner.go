@@ -40,8 +40,9 @@ type GameRunner struct {
 	aiplayers          [2]aiturnplayer.AITurnPlayer
 	order              [2]int
 
-	PlayabilityValues map[string]int
-	UtilityValues     map[string]float64
+	PlayabilityValues      map[string]int
+	UtilityValues          map[string]float64
+	AlphagramUtilityValues map[string]float64
 }
 
 // NewGameRunner just instantiates and initializes a game runner.
@@ -223,6 +224,8 @@ func (r *GameRunner) PlayBestTurn(playerIdx int, addToHistory bool) error {
 		r.PlayabilityValues[word] += 1
 		r.UtilityValues[word] += bestPlay.EquityLosses[i]
 	}
-
+	for i, alphagram := range bestPlay.AlphagramsFormed {
+		r.AlphagramUtilityValues[alphagram] += bestPlay.AlphagramEquityLosses[i]
+	}
 	return nil
 }
