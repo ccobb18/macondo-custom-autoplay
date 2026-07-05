@@ -103,7 +103,7 @@ func TestCompVCompSeries(t *testing.T) {
 	nGames := 400
 	nThreads := 4
 	err := StartCompVCompStaticGames(
-		context.Background(), DefaultConfig, nGames, true, nThreads, 0, true,
+		context.Background(), DefaultConfig, nGames, true, nThreads, 0,
 		"/tmp/testcompvcomp.txt", "/tmp/autoplay_pl.txt", "/tmp/autoplay_ut.txt",
 		"/tmp/autoplay_aut.txt", "NWL20", "English",
 		[]AutomaticRunnerPlayer{

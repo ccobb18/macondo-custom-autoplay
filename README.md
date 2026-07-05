@@ -5,7 +5,7 @@ A fork of macondo that enhances the autoplay feature to be able to calculate pla
 To get playability and utility values, you can run something like
 
 ```
-autoplay -botcode1 HASTY_BOT_2 -botcode2 HASTY_BOT_2 -pllogfile "/path/to/my/file/pllogtest.txt" -utlogfile "/path/to/my/file/utlogtest.txt" -threads 1
+autoplay -botcode1 HASTY_BOT_2 -botcode2 HASTY_BOT_2 -pllogfile "/path/to/my/file/pllogtest.txt" -utlogfile "/path/to/my/file/utlogtest.txt" -autlogfile "/path/to/my/file/autlogtest.txt" -threads 1
 ```
 
 Note: HASTY_BOT_2 is a version of HASTY_BOT that I created as a workaround; see the comment in ai/bot/filters.go.
@@ -14,8 +14,9 @@ Note: It currently breaks if you set threads to anything higher than 1; I should
 I also added a `-sleep` option that will pause the autoplay for the specified number of seconds every so often so my poor old computer doesn't overheat :P
 
 Potential future improvements:
-* ~~Optional argument to pass in paths to existing playability/utility logfiles and have the calculations add to those existing values instead of starting from scratch~~ (Done; pass filepaths into the `-plrlogfile` and `-utrlogfile` options (the "r" stands for "read"), and it will start from the values in those files and add to them.)
-* A version of utility based on alphagrams rather than specific words
+* ~~Optional argument to pass in paths to existing playability/utility logfiles and have the calculations add to those existing values instead of starting from scratch~~ ~~(Done; pass filepaths into the `-plrlogfile` and `-utrlogfile` options (the "r" stands for "read"), and it will start from the values in those files and add to them.)~~ (EDIT 2026-07-05: changed the way this works for simplicity; now `-plrlogfile` etc. don't exist anymore. instead we will read from the `-pllogfile` etc. if they exist to get initial values, make a backup copy, and overwrite the files the end.)
+* ~~A version of utility based on alphagrams rather than specific words~~ (Done; values printed to `-autlogfile`.)
+* A version of alphagram utility that takes into account some baseline probability of being able to find a word. (That is, rather than calculating the equity loss based on not knowing any solution of the alphagram at all, calculate an expected equity loss given, say, a 30% chance of finding any given solution. This would be a naive/simple way to simulate the fact that in reality, sometimes you can find a solution to an alphagram despite not having studied it before.)
 * Make it so that it's not doing the playability and utility calculations unless you actually pass in arguments for those options
 * An option to have all words included in the playability/utility logfiles, even ones with playability/utility of 0
 * An option to not print to the logfile (even the temp one), since it can get quite large if you run autoplay long enough

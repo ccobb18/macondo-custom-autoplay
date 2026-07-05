@@ -8,6 +8,7 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -116,7 +117,7 @@ func playerNames(players []AutomaticRunnerPlayer) []string {
 type Job struct{ gidx int }
 
 func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
-	numGames int, block bool, threads int, sleep int, addToExisting bool,
+	numGames int, block bool, threads int, sleep int,
 	outputFilename, plFilename, utFilename, autFilename, lexicon, letterDistribution string,
 	players []AutomaticRunnerPlayer) error {
 
@@ -126,42 +127,40 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 
 	// fill in the playability and utility values from existing files so
 	// we can pick up where we left off.
-	// this will overwrite the file at the end with the new values.
-	// TODO: create temp copies of the original files in case of errors.
-	if addToExisting {
-		if plFilename != "" {
-			err := loadKeyValueFile(
-				plFilename,
-				strconv.Atoi,
-				playabilityValues,
-			)
-			if err != nil {
-				return err
-			}
+	// this will overwrite the file at the end with the new values and create
+	// a .bak file with the old values in case of issues.
+	if plFilename != "" {
+		err := loadKeyValueFile(
+			plFilename,
+			strconv.Atoi,
+			playabilityValues,
+		)
+		if err != nil {
+			return err
 		}
-		if utFilename != "" {
-			err := loadKeyValueFile(
-				utFilename,
-				func(s string) (float64, error) {
-					return strconv.ParseFloat(s, 64)
-				},
-				utilityValues,
-			)
-			if err != nil {
-				return err
-			}
+	}
+	if utFilename != "" {
+		err := loadKeyValueFile(
+			utFilename,
+			func(s string) (float64, error) {
+				return strconv.ParseFloat(s, 64)
+			},
+			utilityValues,
+		)
+		if err != nil {
+			return err
 		}
-		if autFilename != "" {
-			err := loadKeyValueFile(
-				autFilename,
-				func(s string) (float64, error) {
-					return strconv.ParseFloat(s, 64)
-				},
-				alphagramUtilityValues,
-			)
-			if err != nil {
-				return err
-			}
+	}
+	if autFilename != "" {
+		err := loadKeyValueFile(
+			autFilename,
+			func(s string) (float64, error) {
+				return strconv.ParseFloat(s, 64)
+			},
+			alphagramUtilityValues,
+		)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -182,21 +181,6 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 	logfile, err := os.Create(outputFilename)
 	if err != nil {
 		return err
-	}
-
-	pllogfile, plerr := os.Create(plFilename)
-	if plerr != nil {
-		return plerr
-	}
-
-	utlogfile, uterr := os.Create(utFilename)
-	if uterr != nil {
-		return uterr
-	}
-
-	autlogfile, auterr := os.Create(autFilename)
-	if auterr != nil {
-		return auterr
 	}
 
 	glfilename := filepath.Join(
@@ -263,7 +247,7 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 		for queuingJobs {
 			select {
 			case jobs <- Job{i}:
-				if i%500 == 0 && i > 0 {
+				if i%250 == 0 && i > 0 {
 					log.Info().Msgf("Queued %v jobs", i)
 
 					if sleep > 0 {
@@ -304,6 +288,22 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 		}
 		logfile.Close()
 
+		pltmp := plFilename + ".tmp"
+		pllogfile, err := os.Create(pltmp)
+		if err != nil {
+			return err
+		}
+		uttmp := utFilename + ".tmp"
+		utlogfile, err := os.Create(uttmp)
+		if err != nil {
+			return err
+		}
+		auttmp := autFilename + ".tmp"
+		autlogfile, err := os.Create(auttmp)
+		if err != nil {
+			return err
+		}
+
 		type plkv struct {
 			Key   string
 			Value int
@@ -320,6 +320,13 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 			pllogfile.WriteString(kv.Key + "," + valueAsStr + "\n")
 		}
 		pllogfile.Close()
+		if err := backupFile(plFilename); err != nil {
+			return err
+		}
+
+		if err := os.Rename(pltmp, plFilename); err != nil {
+			return err
+		}
 
 		type utkv struct {
 			Key   string
@@ -337,6 +344,14 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 			utlogfile.WriteString(kv.Key + "," + valueAsStr + "\n")
 		}
 		utlogfile.Close()
+		if err := backupFile(utFilename); err != nil {
+			return err
+		}
+
+		if err := os.Rename(uttmp, utFilename); err != nil {
+			return err
+		}
+
 		var autss []utkv
 		for k, v := range alphagramUtilityValues {
 			autss = append(autss, utkv{k, v})
@@ -349,6 +364,13 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 			autlogfile.WriteString(kv.Key + "," + valueAsStr + "\n")
 		}
 		autlogfile.Close()
+		if err := backupFile(autFilename); err != nil {
+			return err
+		}
+
+		if err := os.Rename(auttmp, autFilename); err != nil {
+			return err
+		}
 
 		log.Info().Msg("Exiting turn logger goroutine!")
 		return nil
@@ -385,6 +407,10 @@ func loadKeyValueFile[T any](
 
 	f, err := os.Open(filename)
 	if err != nil {
+		if os.IsNotExist(err) {
+			log.Info().Msgf("File does not exist, starting fresh: %q", filename)
+			return nil
+		}
 		return err
 	}
 	defer f.Close()
@@ -412,4 +438,35 @@ func loadKeyValueFile[T any](
 	}
 
 	return scanner.Err()
+}
+
+func backupFile(filename string) error {
+	if filename == "" {
+		return nil
+	}
+
+	_, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	bak := filename + ".bak"
+
+	src, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	dst, err := os.Create(bak)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, src)
+	return err
 }
