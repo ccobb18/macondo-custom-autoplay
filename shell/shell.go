@@ -759,7 +759,7 @@ func (sc *ShellController) commitAIMove() error {
 
 func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) error {
 	var logfile, lexicon, letterDistribution, leavefile1, leavefile2, pegfile1, pegfile2 string
-	var pllogfile, utlogfile, autlogfile string
+	var pllogfile, utlogfile, autlogfile, lvaflogfile string
 	var sleep int
 	var numgames, numthreads int
 	var block bool
@@ -787,6 +787,11 @@ func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) err
 		autlogfile = "/tmp/autoplay_aut.txt"
 	} else {
 		autlogfile = options.String("autlogfile")
+	}
+	if options.String("lvaflogfile") == "" {
+		lvaflogfile = "/tmp/autoplay_lvaf.txt"
+	} else {
+		lvaflogfile = options.String("lvaflogfile")
 	}
 	if options.String("lexicon") == "" {
 		lexicon = sc.config.GetString(config.ConfigDefaultLexicon)
@@ -865,10 +870,11 @@ func (sc *ShellController) handleAutoplay(args []string, options CmdOptions) err
 	sc.showMessage("playability scores will log to " + pllogfile)
 	sc.showMessage("utility scores will log to " + utlogfile)
 	sc.showMessage("alphagram utility scores will log to " + autlogfile)
+	sc.showMessage("leave values and frequencies will log to " + lvaflogfile)
 	sc.gameRunnerCtx, sc.gameRunnerCancel = context.WithCancel(context.Background())
 	err = automatic.StartCompVCompStaticGames(
-		sc.gameRunnerCtx, sc.config, numgames, block, numthreads, sleep,
-		logfile, pllogfile, utlogfile, autlogfile, lexicon, letterDistribution,
+		sc.gameRunnerCtx, sc.config, numgames, block, numthreads, sleep, logfile,
+		pllogfile, utlogfile, autlogfile, lvaflogfile, lexicon, letterDistribution,
 		[]automatic.AutomaticRunnerPlayer{
 			{LeaveFile: leavefile1,
 				PEGFile:              pegfile1,

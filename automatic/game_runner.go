@@ -5,7 +5,9 @@ package automatic
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/domino14/word-golib/kwg"
@@ -43,6 +45,8 @@ type GameRunner struct {
 	PlayabilityValues      map[string]int
 	UtilityValues          map[string]float64
 	AlphagramUtilityValues map[string]float64
+	LeaveFreqs             map[string]int
+	LeaveValues            map[string]float64
 }
 
 // NewGameRunner just instantiates and initializes a game runner.
@@ -227,5 +231,29 @@ func (r *GameRunner) PlayBestTurn(playerIdx int, addToHistory bool) error {
 	for i, alphagram := range bestPlay.AlphagramsFormed {
 		r.AlphagramUtilityValues[alphagram] += bestPlay.AlphagramEquityLosses[i]
 	}
+
+	// we have to ignore the endgame since equity is calculated differently.
+	// and the opening play...
+	// this is a really silly way to get the leave values.
+	// might also break on non-static equity bots, i'm not sure? but idc
+	// TODO: figure out how to get the leave values more directly.
+	isEndgame := r.game.Bag().TilesRemaining() == 0
+	isFirstPlay := r.game.Bag().TilesRemaining()+bestPlay.PlayLength() >= 86
+	if !isEndgame && !isFirstPlay && bestPlay.LeaveString() != "" {
+		// update leave frequency running totals, and add leave value to map
+		r.LeaveFreqs[bestPlay.LeaveString()] += 1
+
+		// sanity check
+		calcLeaveVal := bestPlay.Equity() - float64(bestPlay.Score())
+		leaveVal, ok := r.LeaveValues[bestPlay.LeaveString()]
+		// lenient enough to account for rounded file-write values but should
+		// still catch anything egregious
+		if ok && leaveVal != 0 && math.Abs(calcLeaveVal-leaveVal) > 1 {
+			return errors.New("something is wrong with the leave value calculation")
+		}
+
+		r.LeaveValues[bestPlay.LeaveString()] = calcLeaveVal
+	}
+
 	return nil
 }

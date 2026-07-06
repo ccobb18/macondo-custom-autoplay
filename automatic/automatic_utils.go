@@ -118,12 +118,15 @@ type Job struct{ gidx int }
 
 func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 	numGames int, block bool, threads int, sleep int,
-	outputFilename, plFilename, utFilename, autFilename, lexicon, letterDistribution string,
+	outputFilename, plFilename, utFilename, autFilename,
+	lvafFilename, lexicon, letterDistribution string,
 	players []AutomaticRunnerPlayer) error {
 
 	playabilityValues := make(map[string]int)
 	utilityValues := make(map[string]float64)
 	alphagramUtilityValues := make(map[string]float64)
+	leaveFreqs := make(map[string]int)
+	leaveValues := make(map[string]float64)
 
 	// fill in the playability and utility values from existing files so
 	// we can pick up where we left off.
@@ -158,6 +161,16 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 				return strconv.ParseFloat(s, 64)
 			},
 			alphagramUtilityValues,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	if lvafFilename != "" {
+		err := loadLeaveValuesAndFreqsFile(
+			lvafFilename,
+			leaveFreqs,
+			leaveValues,
 		)
 		if err != nil {
 			return err
@@ -219,6 +232,8 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 			r.PlayabilityValues = playabilityValues
 			r.UtilityValues = utilityValues
 			r.AlphagramUtilityValues = alphagramUtilityValues
+			r.LeaveFreqs = leaveFreqs
+			r.LeaveValues = leaveValues
 			err := r.Init(players)
 			if err != nil {
 				log.Err(err).Msg("error initializing runner")
@@ -288,22 +303,6 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 		}
 		logfile.Close()
 
-		pltmp := plFilename + ".tmp"
-		pllogfile, err := os.Create(pltmp)
-		if err != nil {
-			return err
-		}
-		uttmp := utFilename + ".tmp"
-		utlogfile, err := os.Create(uttmp)
-		if err != nil {
-			return err
-		}
-		auttmp := autFilename + ".tmp"
-		autlogfile, err := os.Create(auttmp)
-		if err != nil {
-			return err
-		}
-
 		type plkv struct {
 			Key   string
 			Value int
@@ -315,16 +314,14 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 		sort.Slice(plss, func(i, j int) bool {
 			return plss[i].Value > plss[j].Value
 		})
-		for _, kv := range plss {
-			valueAsStr := strconv.Itoa(kv.Value)
-			pllogfile.WriteString(kv.Key + "," + valueAsStr + "\n")
-		}
-		pllogfile.Close()
-		if err := backupFile(plFilename); err != nil {
-			return err
-		}
-
-		if err := os.Rename(pltmp, plFilename); err != nil {
+		err = replaceFileSafely(plFilename, func(f *os.File) error {
+			for _, kv := range plss {
+				valueAsStr := strconv.Itoa(kv.Value)
+				f.WriteString(kv.Key + "," + valueAsStr + "\n")
+			}
+			return nil
+		})
+		if err != nil {
 			return err
 		}
 
@@ -339,16 +336,14 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 		sort.Slice(utss, func(i, j int) bool {
 			return utss[i].Value > utss[j].Value
 		})
-		for _, kv := range utss {
-			valueAsStr := strconv.FormatFloat(kv.Value, 'f', 2, 64)
-			utlogfile.WriteString(kv.Key + "," + valueAsStr + "\n")
-		}
-		utlogfile.Close()
-		if err := backupFile(utFilename); err != nil {
-			return err
-		}
-
-		if err := os.Rename(uttmp, utFilename); err != nil {
+		err = replaceFileSafely(utFilename, func(f *os.File) error {
+			for _, kv := range utss {
+				valueAsStr := strconv.FormatFloat(kv.Value, 'f', 2, 64)
+				f.WriteString(kv.Key + "," + valueAsStr + "\n")
+			}
+			return nil
+		})
+		if err != nil {
 			return err
 		}
 
@@ -359,17 +354,55 @@ func StartCompVCompStaticGames(ctx context.Context, cfg *config.Config,
 		sort.Slice(autss, func(i, j int) bool {
 			return autss[i].Value > autss[j].Value
 		})
-		for _, kv := range autss {
-			valueAsStr := strconv.FormatFloat(kv.Value, 'f', 2, 64)
-			autlogfile.WriteString(kv.Key + "," + valueAsStr + "\n")
-		}
-		autlogfile.Close()
-		if err := backupFile(autFilename); err != nil {
+		err = replaceFileSafely(autFilename, func(f *os.File) error {
+			for _, kv := range autss {
+				valueAsStr := strconv.FormatFloat(kv.Value, 'f', 2, 64)
+				f.WriteString(kv.Key + "," + valueAsStr + "\n")
+			}
+			return nil
+		})
+		if err != nil {
 			return err
 		}
 
-		if err := os.Rename(auttmp, autFilename); err != nil {
-			return err
+		type lvafRow struct {
+			Leave string
+			Freq  int
+			Value float64
+		}
+		var rows []lvafRow
+		for leave, freq := range leaveFreqs {
+			rows = append(rows, lvafRow{
+				Leave: leave,
+				Freq:  freq,
+				Value: leaveValues[leave],
+			})
+		}
+		sort.Slice(rows, func(i, j int) bool {
+			return rows[i].Freq > rows[j].Freq
+		})
+		if lvafFilename != "" {
+			err := replaceFileSafely(
+				lvafFilename,
+				func(f *os.File) error {
+					for _, row := range rows {
+						_, err := fmt.Fprintf(
+							f,
+							"%s,%d,%.1f\n",
+							row.Leave,
+							row.Freq,
+							row.Value,
+						)
+						if err != nil {
+							return err
+						}
+					}
+					return nil
+				},
+			)
+			if err != nil {
+				return err
+			}
 		}
 
 		log.Info().Msg("Exiting turn logger goroutine!")
@@ -469,4 +502,82 @@ func backupFile(filename string) error {
 
 	_, err = io.Copy(dst, src)
 	return err
+}
+
+func loadLeaveValuesAndFreqsFile(
+	filename string,
+	leaveFreqs map[string]int,
+	leaveValues map[string]float64,
+) error {
+	log.Info().Msgf("Reading existing leave values from: %q", filename)
+
+	f, err := os.Open(filename)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Info().Msgf("File does not exist, starting fresh: %q", filename)
+			return nil
+		}
+		return err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+
+		parts := strings.Split(line, ",")
+		if len(parts) != 3 {
+			log.Info().Msgf("skipping malformed line: %q", line)
+			continue
+		}
+
+		freq, err := strconv.Atoi(parts[1])
+		if err != nil {
+			log.Info().Msgf("skipping line (bad frequency): %q", line)
+			continue
+		}
+
+		value, err := strconv.ParseFloat(parts[2], 64)
+		if err != nil {
+			log.Info().Msgf("skipping line (bad value): %q", line)
+			continue
+		}
+
+		leaveFreqs[parts[0]] = freq
+		leaveValues[parts[0]] = value
+	}
+
+	return scanner.Err()
+}
+
+func replaceFileSafely(
+	filename string,
+	writeFunc func(*os.File) error,
+) error {
+	tmp := filename + ".tmp"
+
+	f, err := os.Create(tmp)
+	if err != nil {
+		return err
+	}
+
+	if err := writeFunc(f); err != nil {
+		f.Close()
+		os.Remove(tmp)
+		return err
+	}
+
+	if err := f.Close(); err != nil {
+		return err
+	}
+
+	if err := backupFile(filename); err != nil {
+		return err
+	}
+
+	return os.Rename(tmp, filename)
 }

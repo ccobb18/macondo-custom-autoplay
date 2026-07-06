@@ -105,7 +105,7 @@ func TestCompVCompSeries(t *testing.T) {
 	err := StartCompVCompStaticGames(
 		context.Background(), DefaultConfig, nGames, true, nThreads, 0,
 		"/tmp/testcompvcomp.txt", "/tmp/autoplay_pl.txt", "/tmp/autoplay_ut.txt",
-		"/tmp/autoplay_aut.txt", "NWL20", "English",
+		"/tmp/autoplay_aut.txt", "/tmp/autoplay_lvaf.txt", "NWL20", "English",
 		[]AutomaticRunnerPlayer{
 			{"", "", macondo.BotRequest_HASTY_BOT, 0, false},
 			{"", "", macondo.BotRequest_NO_LEAVE_BOT, 0, false},

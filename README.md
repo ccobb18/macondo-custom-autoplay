@@ -2,10 +2,12 @@
 
 A fork of macondo that enhances the autoplay feature to be able to calculate playability and utility values. "Playability" here means simply how many times a word was played across a sample of autoplayed games (either as a main word or a cross word). "Utility" corresponds to a slightly more useful metric which is also sometimes called "playability", e.g. [here](https://crosstables.livejournal.com/24367.html); it instead calculates roughly what the total equity loss would be across the sample of games from not knowing a given word.
 
+Update 2025-07-06: Also logs a file of rack leaves sorted by frequency, along with their leave values.
+
 To get playability and utility values, you can run something like
 
 ```
-autoplay -botcode1 HASTY_BOT_2 -botcode2 HASTY_BOT_2 -pllogfile "/path/to/my/file/pllogtest.txt" -utlogfile "/path/to/my/file/utlogtest.txt" -autlogfile "/path/to/my/file/autlogtest.txt" -threads 1
+autoplay -botcode1 HASTY_BOT_2 -botcode2 HASTY_BOT_2 -pllogfile "/path/to/my/file/pllog.txt" -utlogfile "/path/to/my/file/utlog.txt" -autlogfile "/path/to/my/file/autlog.txt" -lvaflogfile "/path/to/my/file/lvaflog.txt" -threads 1
 ```
 
 Note: HASTY_BOT_2 is a version of HASTY_BOT that I created as a workaround; see the comment in ai/bot/filters.go.
